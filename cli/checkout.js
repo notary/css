@@ -1,39 +1,34 @@
 const util = require('util');
 const fs = require('fs-extra');
-const spawn = util.promisify(require('child_process').spawn);
+const path = require('path');
+const spawn = require('child_process').spawn;
 
-const [ checkoutDirectory = './checkout', pullRequest = 'master' ] = process.argv.slice(2);
+const [ checkoutDirectory = path.resolve('./checkout'), pullRequest = 'master' ] = process.argv.slice(2);
+const cwd = process.cwd();
 
-async function wrapTryCatch(fn) {
+ function wrapTryCatch(fn) {
     try {
-        await fn();
+        return await fn();
     } catch(e) {
         console.error(e);
         process.exit(1);
     }
 }
 
-async function exec(cmd, forceOutput) {
-    process.stdout.write(`Executing ${cmd}...`);
+function exec(cmd, opts = { cwd: checkoutDirectory }) {
+    const { cwd } = opts;
 
-    const { stdout, stderr, err } = await spawn(cmd, { stdio: 'inherit', shell: true });
+    console.log(`${cwd} $ ${cmd}`);
 
-    if (err) {
-        process.stdout.write('failed\n');
-        console.error(stderr);
-        process.exit(1);
-    } else {
+    const ps = spawn(cmd, { stdio: 'inherit', shell: true, cwd });
 
-        process.stdout.write('ok\n');
-    }
-
-    if (forceOutput) {
-        console.log(stdout);
-    }
+    return new Promise((resolve, reject) => {
+        ps.on('close', code => code === 0 ? resolve() : reject(code));
+    });
 }
 
 async function updateRepository() {
-    await exec(`cd ${checkoutDirectory} && git fetch --all`);
+    await exec('git fetch --all');
 }
 
 async function cloneRepository() {
@@ -43,10 +38,10 @@ async function cloneRepository() {
         fetch = +refs/pull/*/head:refs/remotes/origin/pr/*
     `.trim();
 
-    wrapTryCatch(async () => {
-        await exec(`git clone https://github.com/turboext/css.git ${checkoutDirectory}`);
-        await exec(`echo '${remotes}' >> ${checkoutDirectory}/.git/config`);
-        await exec(`cd ${checkoutDirectory} && git fetch --all`);
+    await wrapTryCatch(async () => {
+        await exec(`git clone https://github.com/turboext/css.git ${checkoutDirectory}`, { cwd });
+        await exec(`echo '${remotes}' >> .git/config`);
+        await exec(`git fetch --all`);
     });
 }
 
@@ -59,8 +54,12 @@ async function checkoutPR(pullRequest) {
 }
 
 (async () => {
-    const exists = await fs.exists(checkoutDirectory);
-    exists ? await updateRepository() : await cloneRepository();
+    try {
+        const exists = await fs.exists(checkoutDirectory);
+        exists ? await updateRepository() : await cloneRepository();
 
-    await checkoutPR(pullRequest);
+        await checkoutPR(pullRequest);
+    } catch(e) {
+        console.log(e)
+    }
 })();
