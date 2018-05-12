@@ -1,6 +1,6 @@
 const yaml = require('js-yaml');
 const fs = require('fs-extra');
-const { basename, join, resolve } = require('path');
+const { basename, join } = require('path');
 const postcss = require('../lib/postcss');
 const hostFiles = require('../lib/host-files.js');
 
@@ -30,6 +30,6 @@ const pullRequestDir = join('checkout', process.argv[2].replace('/', '-'));
         fs.writeFileSync(output, JSON.stringify({ css, hosts }, null, 4));
         console.log(`Build was saved to ${output}`);
     } catch(e) {
-        console.error(e)
+        console.error(e);
     }
 })();
