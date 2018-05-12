@@ -8,7 +8,10 @@ const yaml = require('js-yaml');
 const { URL } = require('url');
 const chalk = require('chalk');
 const fs = require('fs');
-const postcss = require('./lib/postcss');
+
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+
+const getHostCSS = require('./lib/server/get-host-css');
 
 app.get('/', (req, res) => {
     require('fs').createReadStream('public/index.html').pipe(res);
@@ -25,36 +28,6 @@ function getHostname(url) {
     } catch(e) {
         return '';
     }
-}
-
-/**
- *
- * @param {string} origin
- * @return {Promise}
- */
-function getHostCSS(origin) {
-    const hosts = glob.sync('hosts/*/HOSTS.yaml').map(file => {
-        try {
-            return {
-                hosts: yaml.safeLoad(fs.readFileSync(file, 'utf8')),
-                style: path.resolve(path.join(path.dirname(file), 'style.css'))
-            };
-        } catch(e) {}
-    }).filter(meta => {
-        if (!meta) {
-            return false;
-        }
-
-        return fs.existsSync(meta.style);
-    });
-
-    const host = hosts.find(host => host.hosts.includes(origin));
-
-    if (!host) {
-        return Promise.resolve('');
-    }
-
-    return postcss(host.style);
 }
 
 function normalize(str) {

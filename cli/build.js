@@ -4,15 +4,19 @@ const { basename, join, resolve } = require('path');
 const postcss = require('../lib/postcss');
 const hostFiles = require('../lib/host-files.js');
 
-const [ sources = resolve('./'), pullRequest = 'master' ] = process.argv.slice(2);
+console.assert(process.argv.length === 3, 'You should specify pull-request, for example: "pull/7"');
+
+const pullRequestDir = join('checkout', process.argv[2].replace('/', '-'));
 
 (async () => {
     const css = {};
     const hosts = {};
-    console.log(`${resolve(sources)}/hosts/*/`);
+    console.log(`${pullRequestDir}/hosts/*/`);
 
     try {
-        for (const { host: dir } of hostFiles(`${resolve(sources)}/hosts/*/`)) {
+        console.assert(fs.existsSync(pullRequestDir), 'Pull request directory should exists.');
+
+        for (const { host: dir } of hostFiles(`${pullRequestDir}/hosts/*/`)) {
             console.log(`Processing ${dir}`);
             const key = basename(dir);
 
@@ -22,7 +26,7 @@ const [ sources = resolve('./'), pullRequest = 'master' ] = process.argv.slice(2
                 .forEach(host => hosts[host] = key);
         }
 
-        const output = join(sources, `${pullRequest}.json`);
+        const output = join(pullRequestDir, 'build.json');
         fs.writeFileSync(output, JSON.stringify({ css, hosts }, null, 4));
         console.log(`Build was saved to ${output}`);
     } catch(e) {
