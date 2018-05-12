@@ -1,5 +1,6 @@
 .idea
 .history
+.vscode
 
 node_modules
 hosts/**/*.min.css

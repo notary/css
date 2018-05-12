@@ -1,13 +1,9 @@
 const express = require('express');
 const app = module.exports = express();
 const rp = require('request-promise');
-const cheerio = require('cheerio')
-const glob = require('glob');
-const path = require('path');
-const yaml = require('js-yaml');
+const cheerio = require('cheerio');
 const { URL } = require('url');
 const chalk = require('chalk');
-const fs = require('fs');
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -48,21 +44,35 @@ function getTurbo(req, query) {
     delete headers.host;
 
     return rp({
-        uri: query ? `https://yandex.ru/turbo?text=${query}` : `https://yandex.ru/turbo`,
+        uri: query ? `https://yandex.ru/turbo?text=${query}` : 'https://yandex.ru/turbo',
         headers,
         gzip: true
     });
 }
 
+app.use((req, res, next) => {
+    const query = req.query.text;
+
+    req.ctx = {
+        pullRequest: 'pull-8',
+        query: normalize(req.query.text),
+        hostname: getHostname(query)
+    };
+
+    next();
+});
+
 app.get('/turbo', (req, res, next) => {
-    const query = normalize(req.query.text);
-    const hostname = getHostname(query);
+    const {
+        query,
+        hostname
+    } = req.ctx;
 
     if (!hostname) {
         return getTurbo(req, query).then(html => res.send(html)).catch(e => next(e));
     }
 
-    Promise.all([getTurbo(req, query), getHostCSS(hostname)]).then(([html, style]) => {
+    Promise.all([getTurbo(req, query), getHostCSS(req, hostname)]).then(([html, style]) => {
         res.status(200);
 
         const $ = cheerio.load(html);
@@ -76,7 +86,7 @@ app.get('/turbo', (req, res, next) => {
 
 app.use((err, req, res) => {
     res.status(500);
-    res.send(err);
+    res.end(err);
 });
 
 app.listen(3000, () => {
