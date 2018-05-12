@@ -7,3 +7,4 @@ hosts/**/*.gz
 !hosts/**/hosts.json
 !hosts/**/style.css
 !hosts/**/OWNERS.yaml
+checkout
