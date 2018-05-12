@@ -2,9 +2,8 @@ const util = require('util');
 const fs = require('fs-extra');
 const path = require('path');
 const spawn = require('child_process').spawnSync;
-const chalk = require('chalk');
 
-const [ checkoutDirectory = path.resolve('./checkout'), pullRequest = 'master' ] = process.argv.slice(2);
+const [checkoutDirectory = path.resolve('./checkout'), pullRequest = 'master'] = process.argv.slice(2);
 const cwd = process.cwd();
 
 function exec(cmd, cwd = checkoutDirectory) {
