@@ -4,7 +4,10 @@ const { basename, join } = require('path');
 const postcss = require('../lib/postcss');
 const hostFiles = require('../lib/host-files.js');
 
-console.assert(process.argv.length === 3, 'You should specify pull-request, for example: "pull/7"');
+if (process.argv.length !== 3) {
+    console.log('You should specify pull-request, for example: "pull/7"');
+    process.exit(1);
+}
 
 const pullRequestDir = join('checkout', process.argv[2].replace('/', '-'));
 
